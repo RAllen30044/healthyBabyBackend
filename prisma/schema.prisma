@@ -1,0 +1,104 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Profile {
+  username  String  @id @unique @default("")
+  email     String  @unique
+  caregiver String?
+  password  String  @unique
+  children  Child[]
+}
+
+model activeHomepageComponent {
+  id   Int    @id
+  page String
+}
+
+model Child {
+  id                   Int                    @id @default(autoincrement())
+  gender               String
+  DOB                  String
+  name                 String
+  weight               String
+  height               String
+  headSize             String
+  profileUsername      String                 @default("")
+  profile              Profile                @relation(references: [username], fields: [profileUsername])
+  napHistory           NapHistory[]
+  bottleFeedingHistory BottleFeedingHistory[]
+  breastFeedingHistory BreastFeedingHistory[]
+  mealHistory          MealHistory[]
+  diapersHistory       DiapersHistory[]
+  illnessHistory       IllnessHistory[]
+}
+
+model NapHistory {
+  id           Int    @id @default(autoincrement())
+  time         String
+  date         String
+  lengthOfTime String
+  childId      Int
+  child        Child  @relation(references: [id], fields: [childId])
+}
+
+model BottleFeedingHistory {
+  id                 Int    @id @default(autoincrement())
+  time               String
+  date               String
+  bottleQuantity     String
+  bottleQuantityLeft String
+  childId            Int
+  Child              Child  @relation(fields: [childId], references: [id])
+}
+
+model BreastFeedingHistory {
+  id                Int    @id @default(autoincrement())
+  time              String
+  date              String
+  feedingTimeLength String
+  childId           Int
+  Child             Child  @relation(fields: [childId], references: [id])
+}
+
+model MealHistory {
+  id        Int    @id @default(autoincrement())
+  time      String
+  date      String
+  drinkType String
+  foodType  String
+  childId   Int
+  Child     Child  @relation(fields: [childId], references: [id])
+}
+
+model DiapersHistory {
+  id          Int    @id @default(autoincrement())
+  time        String
+  date        String
+  diaperType  String
+  consistency String
+  childId     Int
+  Child       Child  @relation(fields: [childId], references: [id])
+}
+
+model IllnessHistory {
+  id             Int    @id @default(autoincrement())
+  time           String
+  date           String
+  symptoms       String
+  medicationType String
+  dosage         String
+  childId        Int
+  Child          Child  @relation(fields: [childId], references: [id])
+}
