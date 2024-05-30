@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
-import { PrismaClient, Profile } from "@prisma/client";
+import { Profile } from "@prisma/client";
 import { encryptPassword } from "./validations";
-const client = new PrismaClient();
+import { client } from "./prismaClient";
 
 import { historyTypes } from "./Types";
 
@@ -93,7 +93,7 @@ const formatDate = (inputDate: string) => {
 
 export const randomizeDate = () => {
   const getRandomDate = faker.date.recent({ days: 10 });
-  console.log(getRandomDate);
+
   if (getRandomDate.getMonth() + 1 < 10 && getRandomDate.getDate() < 10) {
     return `${getRandomDate.getFullYear()}-0${
       getRandomDate.getMonth() + 1
@@ -190,7 +190,7 @@ const seedInfo = async () => {
     components.push(child);
   }
 
-  for (let i = 0; i < 40; i++) {
+  for (let i = 0; i < 100; i++) {
     const randomChildId = childIds[Math.floor(Math.random() * childIds.length)];
     const napHistory = await client.napHistory.create({
       data: {
@@ -203,7 +203,7 @@ const seedInfo = async () => {
     components.push(napHistory);
   }
 
-  for (let i = 0; i < 40; i++) {
+  for (let i = 0; i < 100; i++) {
     const randomChildId = childIds[Math.floor(Math.random() * childIds.length)];
     const bottleFeedingHistory = await client.bottleFeedingHistory.create({
       data: {
@@ -222,7 +222,7 @@ const seedInfo = async () => {
     components.push(bottleFeedingHistory);
   }
 
-  for (let i = 0; i < 40; i++) {
+  for (let i = 0; i < 100; i++) {
     const randomChildId = childIds[Math.floor(Math.random() * childIds.length)];
     const breastFeedingHistory = await client.breastFeedingHistory.create({
       data: {
@@ -235,7 +235,7 @@ const seedInfo = async () => {
     components.push(breastFeedingHistory);
   }
 
-  for (let i = 0; i < 40; i++) {
+  for (let i = 0; i < 100; i++) {
     const randomChildId = childIds[Math.floor(Math.random() * childIds.length)];
     const mealHistory = await client.mealHistory.create({
       data: {
@@ -249,7 +249,7 @@ const seedInfo = async () => {
     components.push(mealHistory);
   }
 
-  for (let i = 0; i < 40; i++) {
+  for (let i = 0; i < 100; i++) {
     const randomChildId = childIds[Math.floor(Math.random() * childIds.length)];
     const diaper = randomizeItem(diaperConsistency);
     const diapersHistory = await client.diapersHistory.create({
@@ -265,7 +265,7 @@ const seedInfo = async () => {
     });
     components.push(diapersHistory);
   }
-  for (let i = 0; i < 40; i++) {
+  for (let i = 0; i < 100; i++) {
     const randomChildId = childIds[Math.floor(Math.random() * childIds.length)];
     const illnessHistory = await client.illnessHistory.create({
       data: {
@@ -289,4 +289,12 @@ const seedInfo = async () => {
   components.forEach((component) => component);
 };
 
-Promise.resolve().then(clearDb).then(seedInfo).catch(console.error);
+Promise.resolve()
+  .then(() => console.log("Clearing Database"))
+  .then(clearDb)
+  .then(() => {
+    console.log("seeding");
+  })
+  .then(seedInfo)
+  .then(() => console.log("Database Seeded 🌴"))
+  .catch(console.error);
