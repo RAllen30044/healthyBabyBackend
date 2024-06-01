@@ -1,5 +1,8 @@
 import { Router } from "express";
 import { client } from "./prismaClient";
+import { validateRequest, validateRequestParams } from "zod-express-middleware";
+import z from "zod";
+import { time } from "console";
 
 const historyController = Router();
 
@@ -52,63 +55,81 @@ historyController.get("/napHistory", async (_req, res) => {
   res.send(napHistory);
 });
 
-historyController.delete(`/IllnessHistory/:id`, async (req, res) => {
-  const id = +req.params.id;
-  if (isNaN(id)) {
-    return res.status(400).send({ message: "id should be a number" });
+historyController.delete(
+  `/IllnessHistory/:id`,
+  validateRequest({
+    params: z.object({
+      id: z.number(),
+    }),
+  }),
+  async (req, res) => {
+    const id = +req.params.id;
+
+    const deleteHistory = await Promise.resolve()
+      .then(() => {
+        return client.illnessHistory.delete({
+          where: {
+            id,
+          },
+        });
+      })
+      .catch(() => null);
+    if (deleteHistory === null) {
+      return res.status(204).send({ message: `History not found` });
+    }
+    return res.status(200).send(deleteHistory);
   }
-  const deleteHistory = await Promise.resolve()
-    .then(() => {
-      return client.illnessHistory.delete({
-        where: {
-          id,
-        },
-      });
-    })
-    .catch(() => null);
-  if (deleteHistory === null) {
-    return res.status(204).send({ message: `History not found` });
+);
+historyController.delete(
+  `/diapersHistory/:id`,
+  validateRequest({
+    params: z.object({
+      id: z.number(),
+    }),
+  }),
+  async (req, res) => {
+    const id = +req.params.id;
+
+    const deleteHistory = await Promise.resolve()
+      .then(() => {
+        return client.diapersHistory.delete({
+          where: {
+            id,
+          },
+        });
+      })
+      .catch(() => null);
+    if (deleteHistory === null) {
+      return res.status(204).send({ message: `History not found` });
+    }
+    return res.status(200).send(deleteHistory);
   }
-  return res.status(200).send(deleteHistory);
-});
-historyController.delete(`/diapersHistory/:id`, async (req, res) => {
-  const id = +req.params.id;
-  if (isNaN(id)) {
-    return res.status(400).send({ message: "id should be a number" });
+);
+historyController.delete(
+  `/napHistory/:id`,
+  validateRequest({
+    params: z.object({
+      id: z.number(),
+    }),
+  }),
+  async (req, res) => {
+    const id = +req.params.id;
+
+    const deleteHistory = await Promise.resolve()
+      .then(() => {
+        return client.napHistory.delete({
+          where: {
+            id,
+          },
+        });
+      })
+      .catch(() => null);
+    if (deleteHistory === null) {
+      return res.status(204).send({ message: `History not found` });
+    }
+    return res.status(200).send(deleteHistory);
   }
-  const deleteHistory = await Promise.resolve()
-    .then(() => {
-      return client.diapersHistory.delete({
-        where: {
-          id,
-        },
-      });
-    })
-    .catch(() => null);
-  if (deleteHistory === null) {
-    return res.status(204).send({ message: `History not found` });
-  }
-  return res.status(200).send(deleteHistory);
-});
-historyController.delete(`/napHistory/:id`, async (req, res) => {
-  const id = +req.params.id;
-  if (isNaN(id)) {
-    return res.status(400).send({ message: "id should be a number" });
-  }
-  const deleteHistory = await Promise.resolve()
-    .then(() => {
-      return client.napHistory.delete({
-        where: {
-          id,
-        },
-      });
-    })
-    .catch(() => null);
-  if (deleteHistory === null) {
-    return res.status(204).send({ message: `History not found` });
-  }
-  return res.status(200).send(deleteHistory);
-});
+);
 historyController.delete(`/mealHistory/:id`, async (req, res) => {
   const id = +req.params.id;
   if (isNaN(id)) {
@@ -167,312 +188,184 @@ historyController.delete(`/bottleFeedingHistory/:id`, async (req, res) => {
   return res.status(200).send(deleteHistory);
 });
 
-historyController.post("/napHistory", async (req, res) => {
-  const body = req.body;
-  const errors: string[] = [];
-  const validKeys = ["time", "date", "lengthOfTime", "childId"];
-  const inputKeys = Object.keys(body);
+historyController.post(
+  "/napHistory",
+  validateRequest({
+    body: z.object({
+      time: z.string(),
+      date: z.string(),
+      lengthOfTime: z.string(),
+      childId: z.number(),
+    }),
+  }),
+  async (req, res) => {
+    const body = req.body;
 
-  // Check for invalid keys
-  inputKeys.forEach((key) => {
-    if (!validKeys.includes(key)) {
-      errors.push(`'${key}' is not a valid key`);
+    try {
+      const history = await client.napHistory.create({
+        data: {
+          time: body.time,
+          date: body.date,
+          lengthOfTime: body.lengthOfTime,
+          childId: body.childId,
+        },
+      });
+      return res.status(201).send(history);
+    } catch (err) {
+      return res.status(500).send({ error: "Internal server error" });
     }
-  });
+  }
+);
+historyController.post(
+  "/illnessHistory",
+  validateRequest({
+    body: z.object({
+      time: z.string(),
+      date: z.string(),
+      symptoms: z.string(),
+      medicationType: z.string(),
+      dosage: z.string(),
+      childId: z.number(),
+    }),
+  }),
+  async (req, res) => {
+    const body = req.body;
 
-  // Validate fields
-  if (typeof body.time !== "string") {
-    errors.push("time should be a string");
-  }
-  if (typeof body.date !== "string") {
-    errors.push("date should be a string");
-  }
-  if (typeof body.lengthOfTime !== "string") {
-    errors.push("lengthOfTime should be a string");
-  }
-  if (typeof body.childId !== "number" || isNaN(body.childId)) {
-    errors.push("childId should be a number");
-  }
-
-  // If there are any errors, return them
-  if (errors.length > 0) {
-    return res.status(400).send({ errors });
-  }
-  try {
-    const history = await client.napHistory.create({
-      data: {
-        time: body.time,
-        date: body.date,
-        lengthOfTime: body.lengthOfTime,
-        childId: body.childId,
-      },
-    });
-    return res.status(201).send(history);
-  } catch (err) {
-    return res.status(500).send({ error: "Internal server error" });
-  }
-});
-historyController.post("/illnessHistory", async (req, res) => {
-  const body = req.body;
-  const errors: string[] = [];
-  const validKeys = [
-    "time",
-    "date",
-    "symptoms",
-    "medicationType",
-    "dosage",
-    "childId",
-  ];
-  const inputKeys = Object.keys(body);
-
-  // Check for invalid keys
-  inputKeys.forEach((key) => {
-    if (!validKeys.includes(key)) {
-      errors.push(`'${key}' is not a valid key`);
+    try {
+      const history = await client.illnessHistory.create({
+        data: {
+          time: body.time,
+          date: body.date,
+          symptoms: body.symptoms,
+          medicationType: body.medicationType,
+          dosage: body.dosage,
+          childId: body.childId,
+        },
+      });
+      return res.status(201).send(history);
+    } catch (err) {
+      return res.status(500).send({ error: "Internal server error" });
     }
-  });
+  }
+);
 
-  // Validate fields
-  if (typeof body.time !== "string") {
-    errors.push("time should be a string");
-  }
-  if (typeof body.date !== "string") {
-    errors.push("date should be a string");
-  }
-  if (typeof body.symptoms !== "string") {
-    errors.push("symptoms should be a string");
-  }
-  if (typeof body.medicationType !== "string") {
-    errors.push("medicationType should be a string");
-  }
-  if (typeof body.dosage !== "string") {
-    errors.push("dosage should be a string");
-  }
-  if (typeof body.childId !== "number" || isNaN(body.childId)) {
-    errors.push("childId should be a number");
-  }
+historyController.post(
+  "/diapersHistory",
+  validateRequest({
+    body: z.object({
+      time: z.string(),
+      date: z.string(),
+      diaperType: z.string(),
+      consistency: z.string(),
+      childId: z.number(),
+    }),
+  }),
+  async (req, res) => {
+    const body = req.body;
 
-  // If there are any errors, return them
-  if (errors.length > 0) {
-    return res.status(400).send({ errors });
-  }
-  try {
-    const history = await client.illnessHistory.create({
-      data: {
-        time: body.time,
-        date: body.date,
-        symptoms: body.symptoms,
-        medicationType: body.medicationType,
-        dosage: body.dosage,
-        childId: body.childId,
-      },
-    });
-    return res.status(201).send(history);
-  } catch (err) {
-    return res.status(500).send({ error: "Internal server error" });
-  }
-});
-
-historyController.post("/diapersHistory", async (req, res) => {
-  const body = req.body;
-  const errors: string[] = [];
-  const validKeys = ["time", "date", "diaperType", "consistency", "childId"];
-  const inputKeys = Object.keys(body);
-
-  // Check for invalid keys
-  inputKeys.forEach((key) => {
-    if (!validKeys.includes(key)) {
-      errors.push(`'${key}' is not a valid key`);
+    try {
+      const history = await client.diapersHistory.create({
+        data: {
+          time: body.time,
+          date: body.date,
+          diaperType: body.diaperType,
+          consistency: body.consistency,
+          childId: body.childId,
+        },
+      });
+      return res.status(201).send(history);
+    } catch (err) {
+      return res.status(500).send({ error: "Internal server error" });
     }
-  });
+  }
+);
+historyController.post(
+  "/mealHistory",
+  validateRequest({
+    body: z.object({
+      time: z.string(),
+      date: z.string(),
+      drinkType: z.string(),
+      foodType: z.string(),
+      childId: z.number(),
+    }),
+  }),
+  async (req, res) => {
+    const body = req.body;
 
-  // Validate fields
-  if (typeof body.time !== "string") {
-    errors.push("time should be a string");
-  }
-  if (typeof body.date !== "string") {
-    errors.push("date should be a string");
-  }
-  if (typeof body.diaperType !== "string") {
-    errors.push("diaperType should be a string");
-  }
-  if (typeof body.consistency !== "string") {
-    errors.push("consistency should be a string");
-  }
-  if (typeof body.childId !== "number" || isNaN(body.childId)) {
-    errors.push("childId should be a number");
-  }
-
-  // If there are any errors, return them
-  if (errors.length > 0) {
-    return res.status(400).send({ errors });
-  }
-  try {
-    const history = await client.diapersHistory.create({
-      data: {
-        time: body.time,
-        date: body.date,
-        diaperType: body.diaperType,
-        consistency: body.consistency,
-        childId: body.childId,
-      },
-    });
-    return res.status(201).send(history);
-  } catch (err) {
-    return res.status(500).send({ error: "Internal server error" });
-  }
-});
-historyController.post("/mealHistory", async (req, res) => {
-  const body = req.body;
-  const errors: string[] = [];
-  const validKeys = ["time", "date", "drinkType", "foodType", "childId"];
-  const inputKeys = Object.keys(body);
-
-  // Check for invalid keys
-  inputKeys.forEach((key) => {
-    if (!validKeys.includes(key)) {
-      errors.push(`'${key}' is not a valid key`);
+    try {
+      const history = await client.mealHistory.create({
+        data: {
+          time: body.time,
+          date: body.date,
+          drinkType: body.drinkType,
+          foodType: body.foodType,
+          childId: body.childId,
+        },
+      });
+      return res.status(201).send(history);
+    } catch (err) {
+      return res.status(500).send({ error: "Internal server error" });
     }
-  });
+  }
+);
+historyController.post(
+  "/breastFeedingHistory",
+  validateRequest({
+    body: z.object({
+      time: z.string(),
+      date: z.string(),
+      feedingTimeLength: z.string(),
+      childId: z.number(),
+    }),
+  }),
+  async (req, res) => {
+    const body = req.body;
 
-  // Validate fields
-  if (typeof body.time !== "string") {
-    errors.push("time should be a string");
-  }
-  if (typeof body.date !== "string") {
-    errors.push("date should be a string");
-  }
-  if (typeof body.drinkType !== "string") {
-    errors.push("drinkType should be a string");
-  }
-  if (typeof body.foodType !== "string") {
-    errors.push("foodType should be a string");
-  }
-
-  if (typeof body.childId !== "number" || isNaN(body.childId)) {
-    errors.push("childId should be a number");
-  }
-
-  // If there are any errors, return them
-  if (errors.length > 0) {
-    return res.status(400).send({ errors });
-  }
-  try {
-    const history = await client.mealHistory.create({
-      data: {
-        time: body.time,
-        date: body.date,
-        drinkType: body.drinkType,
-        foodType: body.foodType,
-        childId: body.childId,
-      },
-    });
-    return res.status(201).send(history);
-  } catch (err) {
-    return res.status(500).send({ error: "Internal server error" });
-  }
-});
-historyController.post("/breastFeedingHistory", async (req, res) => {
-  const body = req.body;
-  const errors: string[] = [];
-  const validKeys = ["time", "date", "feedingTimeLength", "childId"];
-  const inputKeys = Object.keys(body);
-
-  // Check for invalid keys
-  inputKeys.forEach((key) => {
-    if (!validKeys.includes(key)) {
-      errors.push(`'${key}' is not a valid key`);
+    try {
+      const history = await client.breastFeedingHistory.create({
+        data: {
+          time: body.time,
+          date: body.date,
+          feedingTimeLength: body.feedingTimeLength,
+          childId: body.childId,
+        },
+      });
+      return res.status(201).send(history);
+    } catch (err) {
+      return res.status(500).send({ error: "Internal server error" });
     }
-  });
+  }
+);
+historyController.post(
+  "/bottleFeedingHistory",
+  validateRequest({
+    body: z.object({
+      time: z.string(),
+      date: z.string(),
+      bottleQuantity: z.string(),
+      bottleQuantityLeft: z.string(),
+      childId: z.number(),
+    }),
+  }),
+  async (req, res) => {
+    const body = req.body;
 
-  // Validate fields
-  if (typeof body.time !== "string") {
-    errors.push("time should be a string");
-  }
-  if (typeof body.date !== "string") {
-    errors.push("date should be a string");
-  }
-  if (typeof body.feedingTimeLength !== "string") {
-    errors.push("feedingTimeLength should be a string");
-  }
-
-  if (typeof body.childId !== "number" || isNaN(body.childId)) {
-    errors.push("childId should be a number");
-  }
-
-  // If there are any errors, return them
-  if (errors.length > 0) {
-    return res.status(400).send({ errors });
-  }
-  try {
-    const history = await client.breastFeedingHistory.create({
-      data: {
-        time: body.time,
-        date: body.date,
-        feedingTimeLength: body.feedingTimeLength,
-        childId: body.childId,
-      },
-    });
-    return res.status(201).send(history);
-  } catch (err) {
-    return res.status(500).send({ error: "Internal server error" });
-  }
-});
-historyController.post("/bottleFeedingHistory", async (req, res) => {
-  const body = req.body;
-  const errors: string[] = [];
-  const validKeys = [
-    "time",
-    "date",
-    "bottleQuantity",
-    "bottleQuantityLeft",
-    "childId",
-  ];
-  const inputKeys = Object.keys(body);
-
-  // Check for invalid keys
-  inputKeys.forEach((key) => {
-    if (!validKeys.includes(key)) {
-      errors.push(`'${key}' is not a valid key`);
+    try {
+      const history = await client.bottleFeedingHistory.create({
+        data: {
+          time: body.time,
+          date: body.date,
+          bottleQuantity: body.bottleQuantity,
+          bottleQuantityLeft: body.bottleQuantityLeft,
+          childId: body.childId,
+        },
+      });
+      return res.status(201).send(history);
+    } catch (err) {
+      return res.status(500).send({ error: "Internal server error" });
     }
-  });
-
-  // Validate fields
-  if (typeof body.time !== "string") {
-    errors.push("time should be a string");
   }
-  if (typeof body.date !== "string") {
-    errors.push("date should be a string");
-  }
-  if (typeof body.bottleQuantity !== "string") {
-    errors.push("bottleQuantity should be a string");
-  }
-  if (typeof body.bottleQuantityLeft !== "string") {
-    errors.push("bottleQuantityLeft should be a string");
-  }
-
-  if (typeof body.childId !== "number" || isNaN(body.childId)) {
-    errors.push("childId should be a number");
-  }
-
-  // If there are any errors, return them
-  if (errors.length > 0) {
-    return res.status(400).send({ errors });
-  }
-  try {
-    const history = await client.bottleFeedingHistory.create({
-      data: {
-        time: body.time,
-        date: body.date,
-        bottleQuantity: body.bottleQuantity,
-        bottleQuantityLeft: body.bottleQuantityLeft,
-        childId: body.childId,
-      },
-    });
-    return res.status(201).send(history);
-  } catch (err) {
-    return res.status(500).send({ error: "Internal server error" });
-  }
-});
+);
 
 export { historyController };

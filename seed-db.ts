@@ -56,23 +56,11 @@ const randomizeItem = (itemArray: string[]) => {
 const randomDOB = () => {
   const getDOB = faker.date.birthdate({ min: 0, max: 6, mode: "age" });
 
-  if (getDOB.getMonth() + 1 < 10 && getDOB.getDate() < 10) {
-    return `${getDOB.getFullYear()}-0${
-      getDOB.getMonth() + 1
-    }-0${getDOB.getDate()}`;
-  } else if (getDOB.getDate() < 10) {
-    return `${getDOB.getFullYear()}-${
-      getDOB.getMonth() + 1
-    }-0${getDOB.getDate()}`;
-  } else if (getDOB.getMonth() < 10) {
-    return `${getDOB.getFullYear()}-0${
-      getDOB.getMonth() + 1
-    }-${getDOB.getDate()}`;
-  } else {
-    return `${getDOB.getFullYear()}-${
-      getDOB.getMonth() + 1
-    }-${getDOB.getDate()}`;
-  }
+  const year = getDOB.getFullYear();
+  const month = String(getDOB.getMonth() + 1).padStart(2, "0"); // Ensure two digits for month
+  const day = String(getDOB.getDate()).padStart(2, "0"); // Ensure two digits for day
+
+  return `${year}-${month}-${day}`;
 };
 const createShortHandDate = (date: string) => {
   const dateParts = date.split("-");
