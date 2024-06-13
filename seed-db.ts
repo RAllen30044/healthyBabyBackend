@@ -147,8 +147,16 @@ const seedInfo = async () => {
       email: `yalana.rashton@gmail.com`,
     },
   });
+  const recruiter = await client.profile.create({
+    data: {
+      username: `recruiter`,
+      password: await encryptPassword(`HireHim#1`),
+      caregiver: `Granny`,
+      email: `recruiter@gmail.com`,
+    },
+  });
 
-  users = [andrei, jon, rob, yalana];
+  users = [andrei, jon, rob, yalana, recruiter];
   const usersId: string[] = users.map((user) => user.username);
   users.forEach((user) => user);
 
